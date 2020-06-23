@@ -42,3 +42,16 @@ Apollo server datasource wrapping Firestore REST APIs.
   ```
 
   ## API
+
+  ### Constructor - `new FireStore(config)`:
+
+  - **config** (_object_):
+    ```javascript
+      // default values supplied
+      {
+        projectId, // string: Firestore project ID (required)
+        version: 'v1', // string (optional)
+        resource: 'databases', // string: <'databases' | 'locations'> (optional)
+        database: '(default)', // string (optional)
+      }
+    ```
