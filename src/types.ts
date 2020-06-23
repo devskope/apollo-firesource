@@ -1,5 +1,5 @@
 export interface FireSourceConfig {
-  version?: string;
+  version?: 'v1';
   projectId: string;
   resource?: 'databases' | 'locations';
   database?: string;
