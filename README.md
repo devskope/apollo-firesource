@@ -43,7 +43,7 @@ Apollo server datasource wrapping Firestore REST APIs.
 
   ## API
 
-  ### Constructor - `new FireStore(config)`:
+  ### Constructor - `firestore = new FireStore(config)`:
 
   - **config** (_object_):
     ```javascript
@@ -55,3 +55,21 @@ Apollo server datasource wrapping Firestore REST APIs.
         database: '(default)', // string (optional)
       }
     ```
+
+  ### Documents - `firestore.documents()`
+
+  - **methods** (_async_):
+
+    - `get(options) => DocumentData | DocumentData[]`
+
+      Retrieve one or all documents from a collection.
+
+      - **options** (_object_)
+        ```javascript
+          {
+            collectionId, // string (required)
+            docId, // string (optional) id of single doc to retrieve
+            fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+          }
+        ```
+      - **returns** (_object | Array_): Documents matching provided options or an empty array if none.

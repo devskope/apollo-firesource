@@ -1,10 +1,13 @@
 import { RESTDataSource, RequestOptions } from 'apollo-datasource-rest';
 
-import { FireSourceConfig } from './types';
+import documents from './modules/documents';
 import { gtoken } from './utils';
+import { FireSourceConfig } from './types/firesource';
+import { IDocument } from './types/documents/index';
 
 class FireSource extends RESTDataSource {
   private database: string;
+  documents: IDocument;
 
   constructor({
     version = 'v1',
@@ -15,6 +18,7 @@ class FireSource extends RESTDataSource {
     super();
     this.database = database;
     this.baseURL = `https://firestore.googleapis.com/${version}/projects/${projectId}/${resource}/`;
+    this.documents = documents.bind(this);
   }
 
   async willSendRequest(request: RequestOptions) {
