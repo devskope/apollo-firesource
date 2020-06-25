@@ -1,6 +1,7 @@
-import { RESTDataSource } from 'apollo-datasource-rest';
+import { RESTDataSource, RequestOptions } from 'apollo-datasource-rest';
 
 import { FireSourceConfig } from './types';
+import { gtoken } from './utils';
 
 class FireSource extends RESTDataSource {
   private database: string;
@@ -14,6 +15,11 @@ class FireSource extends RESTDataSource {
     super();
     this.database = database;
     this.baseURL = `https://firestore.googleapis.com/${version}/projects/${projectId}/${resource}/`;
+  }
+
+  async willSendRequest(request: RequestOptions) {
+    const token = await gtoken.getToken();
+    request.headers.set('Authorization', `Bearer ${token.access_token}`);
   }
 }
 
