@@ -27,15 +27,15 @@ Apollo server datasource wrapping Firestore REST APIs.
 
   ```javascript
   Query: {
-    user: async (parent, args, ctx) => {
+    document: async (parent, args, ctx) => {
       const { collectionId, docId } = args;
       const { dataSources:{ firestore } } = ctx;
 
       try {
-      const user = firestore.getDocument({ collectionId, docId });
-      return user;
+        // get document by id from collection
+        return firestore.documents().get({ collectionId, docId });
       } catch (error) {
-        //handle error
+        // handle error
       }
     },
   },
