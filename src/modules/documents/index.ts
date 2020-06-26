@@ -5,6 +5,7 @@ import {
   IDocument,
   DocumentOptions,
   CreateDocumentOptions,
+  DeleteDocumentOptions,
   UpdateDocumentOptions,
 } from '../../types/documents';
 import { buildRecursiveQueryString } from '../../utils';
@@ -30,6 +31,22 @@ documents = function () {
       const doc = await this.post(path, data);
 
       return firestoreDocumentParser(doc);
+    },
+    delete: async (options: DeleteDocumentOptions) => {
+      const { collectionId, docId, currentDocument } = options;
+      let path = `${this.database}/documents/${collectionId}/${docId}`;
+
+      if (currentDocument) {
+        const { exists, updateTime } = currentDocument;
+
+        if (exists || !updateTime) {
+          path += `?currentDocument.exists=${exists ? 'true' : 'false'}`;
+        } else if (updateTime) {
+          path += `?currentDocument.updateTime=${updateTime}`;
+        }
+      }
+
+      return this.delete(path);
     },
     get: async (options: DocumentOptions) => {
       const { collectionId, docId, fieldsToReturn } = options;

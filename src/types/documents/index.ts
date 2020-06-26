@@ -3,6 +3,7 @@ import { DocumentData } from '@firebase/firestore-types';
 export interface IDocument {
   (): {
     create(options: CreateDocumentOptions): DocumentData;
+    delete(options: DeleteDocumentOptions): Promise<{ deleted?: boolean }>;
     get(options: DocumentOptions): DocumentData | DocumentData[];
     update(options: UpdateDocumentOptions): DocumentData;
   };
@@ -21,6 +22,11 @@ export interface CreateDocumentOptions extends DocumentOptions {
       [key: string]: object;
     };
   };
+}
+
+export interface DeleteDocumentOptions extends DocumentOptions {
+  docId: string;
+  currentDocument?: currentDocument;
 }
 
 export interface UpdateDocumentOptions extends CreateDocumentOptions {

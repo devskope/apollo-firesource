@@ -47,9 +47,8 @@ Apollo server datasource wrapping Firestore REST APIs.
 
   - **config** (_object_):
     ```javascript
-      // default values supplied
       {
-        projectId, // string: Firestore project ID (required)
+        projectId: string, // (required) Firestore project ID
         version: 'v1', // string (optional)
         resource: 'databases', // string: <'databases' | 'locations'> (optional)
         database: '(default)', // string (optional)
@@ -68,21 +67,50 @@ Apollo server datasource wrapping Firestore REST APIs.
 
         ```javascript
           {
-            collectionId, // string (required)
-            docId, // string (optional) custom document id
-            fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+            collectionId: string, // (required)
+            docId: string // (optional) custom document id
+            fieldsToReturn: string[] // (optional) array of fields to include in response (mask)
             data: {
-              name, // string (optional) document resource name
-
-              // where `valueType` below is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+              name: string // (optional) document resource name
               fields: {
-                "fieldName": { valueType: value }
+                "fieldName": {
+                  // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+                  valueType: value
+                  }
               }
             }
           }
         ```
 
       - **returns** (_object_): The newly created document
+
+      <br />
+
+    - `delete(options) => object`
+
+      Delete document from collection.
+
+      - **options** (_object_)
+
+        ```javascript
+          {
+            collectionId: string, // (required)
+            docId: string, // (required)
+
+            // (optional)
+            currentDocument: {
+                exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+                updateTime: string // (optional) Timestamp format: When set, the target document must exist and have been last updated at that time
+              }
+          }
+        ```
+
+      - **returns** (_object_):
+        ```
+        {
+          deleted: boolean
+        }
+        ```
 
       <br />
 
@@ -100,6 +128,8 @@ Apollo server datasource wrapping Firestore REST APIs.
         ```
       - **returns** (_object | Array_): Documents matching provided options or an empty array if none.
 
+      <br />
+
     - `update(options) => DocumentData`
 
       Update document in collection by id.
@@ -108,23 +138,26 @@ Apollo server datasource wrapping Firestore REST APIs.
 
         ```javascript
           {
-            collectionId, // string (required)
-            docId, // string (required)  document id
-            fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+            collectionId: string, // (required)
+            docId: string, // (required)  document id
+            fieldsToReturn: string[], // (optional) array of fields to include in response (mask)
             data: {
-              name, // string (optional) document resource name
-
-              // where `valueType` below is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+              name: string, // (optional) document resource name
               fields: {
-                "fieldName": { valueType: value }
+                "fieldName": {
+                  // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+                  valueType: value
+                  }
               }
             },
             updateOptions: {
-               updateAll, // boolean (optional) update all fields
-               fieldsToUpdate, // string[] (optional, required if !updateAll) array of fields to update
+               updateAll: boolean, // (optional) update all fields
+               fieldsToUpdate: string[], // (optional, required if !updateAll) array of fields to update
+
+               // (optional)
                currentDocument: {
-                 exists, // boolean (optional) When set to true, the target document must exist. When set to false, the target document must not exist
-                 updateTime, // string  (Timestamp format) When set, the target document must exist and have been last updated at that time
+                 exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+                 updateTime: string // (optional) Timestamp format When set, the target document must exist and have been last updated at that time
                }
             }
           }
