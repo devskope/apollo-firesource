@@ -29,7 +29,7 @@ Apollo server datasource wrapping Firestore REST APIs.
   Query: {
     document: async (parent, args, ctx) => {
       const { collectionId, docId } = args;
-      const { dataSources:{ firestore } } = ctx;
+      const { dataSources: { firestore } } = ctx;
 
       try {
         // get document by id from collection
@@ -59,6 +59,32 @@ Apollo server datasource wrapping Firestore REST APIs.
   ### Documents - `firestore.documents()`
 
   - **methods** (_async_):
+
+    - `create(options) => DocumentData`
+
+      Insert new document into a collection.
+
+      - **options** (_object_)
+
+        ```javascript
+          {
+            collectionId, // string (required)
+            docId, // string (optional) custom document id
+            fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+            data: {
+              name, // string (optional) document resource name
+
+              // where `valueType` below is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+              fields: {
+                "fieldName": { valueType: value }
+              }
+            }
+          }
+        ```
+
+      - **returns** (_object_): The newly created document
+
+      <br />
 
     - `get(options) => DocumentData | DocumentData[]`
 

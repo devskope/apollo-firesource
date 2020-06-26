@@ -11,6 +11,7 @@ export const buildRecursiveQueryString = (
   valueArray: string[]
 ): string => {
   if (!path.includes('?')) path += '?';
+  if (!path.endsWith('?')) path += '&';
 
   valueArray.forEach((value) => (path += `${queryKey}=${value}&`));
 

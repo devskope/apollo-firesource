@@ -2,16 +2,17 @@ import { DocumentData } from '@firebase/firestore-types';
 
 export interface IDocument {
   (): {
-    get(options: DocOptions): DocumentData | DocumentData[];
+    create(options: CreateDocumentOptions): DocumentData;
+    get(options: DocumentOptions): DocumentData | DocumentData[];
   };
 }
 
-export interface DocOptions {
+export interface DocumentOptions {
   collectionId: string;
   docId?: string;
   fieldsToReturn?: string[];
 }
-export interface CreateDocOptions extends DocOptions {
+export interface CreateDocumentOptions extends DocumentOptions {
   data: {
     name?: string;
     fields: {
@@ -19,7 +20,7 @@ export interface CreateDocOptions extends DocOptions {
     };
   };
 }
-export interface updateDocOptions extends CreateDocOptions {
+export interface updateDocumentOptions extends CreateDocumentOptions {
   docId: string;
   updateOptions: {
     updateAll: boolean;
