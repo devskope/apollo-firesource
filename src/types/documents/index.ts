@@ -4,6 +4,7 @@ export interface IDocument {
   (): {
     create(options: CreateDocumentOptions): DocumentData;
     get(options: DocumentOptions): DocumentData | DocumentData[];
+    update(options: UpdateDocumentOptions): DocumentData;
   };
 }
 
@@ -12,6 +13,7 @@ export interface DocumentOptions {
   docId?: string;
   fieldsToReturn?: string[];
 }
+
 export interface CreateDocumentOptions extends DocumentOptions {
   data: {
     name?: string;
@@ -20,11 +22,22 @@ export interface CreateDocumentOptions extends DocumentOptions {
     };
   };
 }
-export interface updateDocumentOptions extends CreateDocumentOptions {
+
+export interface UpdateDocumentOptions extends CreateDocumentOptions {
   docId: string;
-  updateOptions: {
-    updateAll: boolean;
-    fieldsToUpdate?: string[];
-    currentDocument?: any;
-  };
+  updateOptions:
+    | {
+        updateAll: true;
+        fieldsToUpdate?: undefined;
+        currentDocument?: currentDocument;
+      }
+    | {
+        fieldsToUpdate: string[];
+        updateAll?: undefined;
+        currentDocument?: currentDocument;
+      };
 }
+
+type currentDocument =
+  | { exists: boolean; updateTime?: undefined }
+  | { exists?: undefined; updateTime: string };

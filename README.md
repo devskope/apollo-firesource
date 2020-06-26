@@ -99,3 +99,37 @@ Apollo server datasource wrapping Firestore REST APIs.
           }
         ```
       - **returns** (_object | Array_): Documents matching provided options or an empty array if none.
+
+    - `update(options) => DocumentData`
+
+      Update document in collection by id.
+
+      - **options** (_object_)
+
+        ```javascript
+          {
+            collectionId, // string (required)
+            docId, // string (required)  document id
+            fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+            data: {
+              name, // string (optional) document resource name
+
+              // where `valueType` below is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+              fields: {
+                "fieldName": { valueType: value }
+              }
+            },
+            updateOptions: {
+               updateAll, // boolean (optional) update all fields
+               fieldsToUpdate, // string[] (optional, required if !updateAll) array of fields to update
+               currentDocument: {
+                 exists, // boolean (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+                 updateTime, // string  (Timestamp format) When set, the target document must exist and have been last updated at that time
+               }
+            }
+          }
+        ```
+
+      - **returns** (_object_): The updated document
+
+      <br />
