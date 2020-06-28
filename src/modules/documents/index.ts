@@ -110,6 +110,7 @@ documents = function () {
             item.document.readTime = item.readTime;
             delete item.readTime;
             result.documents.push(firestoreDocumentParser(item.document));
+            result.documentCount = result.documents.length;
           }
 
           if (item.readTime && !result.readTime) {
@@ -125,7 +126,13 @@ documents = function () {
           }
           return result;
         },
-        { documents: [], readTime: '', skippedResults: 0, transaction: '' }
+        {
+          documents: [],
+          documentCount: 0,
+          readTime: '',
+          skippedResults: 0,
+          transaction: '',
+        }
       );
 
       return queryResult;

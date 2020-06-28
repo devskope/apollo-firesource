@@ -157,10 +157,11 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **returns** (object): QueryResult
         ```javascript
         {
-          documents: Array;
-          readTime: string;
-          skippedResults: number;
-          transaction: string;
+          documents: Array,
+          documentCount:number,
+          readTime: string,
+          skippedResults: number,
+          transaction: string
         }
         ```
 

@@ -21,6 +21,7 @@ export interface QueryResponseItem {
 
 export interface QueryResult {
   documents: { readTime: string; [field: string]: any }[];
+  documentCount: number;
   readTime: string;
   skippedResults: number;
   transaction: string;
