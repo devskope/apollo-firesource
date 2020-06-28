@@ -1,6 +1,6 @@
 # Apollo-Firesource
 
-Apollo server datasource wrapping Firestore REST APIs.
+Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome 😊]
 
 ## Basic Usage
 
@@ -132,7 +132,7 @@ Apollo server datasource wrapping Firestore REST APIs.
 
     - `runQuery(options) => queryResult`
 
-      Retrieve one or all documents from a collection.
+      Run a query against the database.
 
       - **options** (_object_)
 
