@@ -130,6 +130,42 @@ Apollo server datasource wrapping Firestore REST APIs.
 
       <br />
 
+    - `runQuery(options) => queryResult`
+
+      Retrieve one or all documents from a collection.
+
+      - **options** (_object_)
+
+        ```javascript
+          {
+            collectionId: string, // optional
+            docId: string, // optional
+
+            // (required) https://cloud.google.com/firestore/docs/reference/rest/v1/StructuredQuery
+            structuredQuery: object,
+
+            // (optional)
+            consistencySelector:{
+              // can be only one of the following:
+              transaction: string,
+              newTransaction: TransactionOptions, // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
+              readTime: string
+            }
+          }
+        ```
+
+      - **returns** (object): QueryResult
+        ```javascript
+        {
+          documents: Array;
+          readTime: string;
+          skippedResults: number;
+          transaction: string;
+        }
+        ```
+
+      <br />
+
     - `update(options) => DocumentData`
 
       Update document in collection by id.

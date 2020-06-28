@@ -2,11 +2,28 @@ import { DocumentData } from '@firebase/firestore-types';
 
 export interface IDocument {
   (): {
-    create(options: CreateDocumentOptions): DocumentData;
+    create(options: CreateDocumentOptions): Promise<DocumentData>;
     delete(options: DeleteDocumentOptions): Promise<{ deleted?: boolean }>;
-    get(options: DocumentOptions): DocumentData | DocumentData[];
-    update(options: UpdateDocumentOptions): DocumentData;
+    get(options: DocumentOptions): Promise<DocumentData | DocumentData[]>;
+    update(options: UpdateDocumentOptions): Promise<DocumentData>;
+    runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
   };
+}
+
+export interface QueryResponseItem {
+  document?: {
+    [field: string]: any;
+  };
+  readTime?: string;
+  skippedResults?: number;
+  transaction?: string;
+}
+
+export interface QueryResult {
+  documents: { readTime: string; [field: string]: any }[];
+  readTime: string;
+  skippedResults: number;
+  transaction: string;
 }
 
 export interface DocumentOptions {
@@ -27,6 +44,48 @@ export interface CreateDocumentOptions extends DocumentOptions {
 export interface DeleteDocumentOptions extends DocumentOptions {
   docId: string;
   currentDocument?: currentDocument;
+}
+
+interface Transaction {
+  transaction: string;
+  newTransaction: never;
+  readTime: never;
+}
+
+interface NewTransaction {
+  newTransaction:
+    | {
+        readOnly: { readTime: string };
+        readWrite?: never;
+      }
+    | {
+        readWrite: { retryTransaction: string };
+        readOnly?: never;
+      };
+  readTime?: never;
+  transaction?: never;
+}
+
+interface ReadTime {
+  readTime: string;
+  transaction?: never;
+  newTransaction?: never;
+}
+
+export interface QueryDocumentOptions {
+  structuredQuery: {
+    select?: { fields: object[] };
+    from?: { collectionId: string; allDescendants?: boolean }[];
+    where?: object;
+    orderBy?: object;
+    startAt?: object;
+    endAt?: object;
+    offset?: number;
+    limit?: number;
+  };
+  collectionId?: string;
+  docId?: string;
+  consistencySelector?: Transaction | NewTransaction | ReadTime;
 }
 
 export interface UpdateDocumentOptions extends CreateDocumentOptions {

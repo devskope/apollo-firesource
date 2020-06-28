@@ -6,7 +6,10 @@ import {
   DocumentOptions,
   CreateDocumentOptions,
   DeleteDocumentOptions,
+  QueryDocumentOptions,
   UpdateDocumentOptions,
+  QueryResponseItem,
+  QueryResult,
 } from '../../types/documents';
 import { buildRecursiveQueryString } from '../../utils';
 
@@ -84,6 +87,48 @@ documents = function () {
 
         return firestoreDocumentParser(doc);
       }
+    },
+    runQuery: async (options: QueryDocumentOptions) => {
+      const {
+        collectionId,
+        docId,
+        structuredQuery,
+        consistencySelector,
+      } = options;
+      let path = `${this.database}/documents`;
+
+      if (collectionId && docId) path += `/${collectionId}/${docId}`;
+
+      const response = await this.post(`${path}:runQuery`, {
+        structuredQuery,
+        ...consistencySelector,
+      });
+
+      const queryResult: QueryResult = response.reduce(
+        (result: QueryResult, item: QueryResponseItem) => {
+          if (item?.document) {
+            item.document.readTime = item.readTime;
+            delete item.readTime;
+            result.documents.push(firestoreDocumentParser(item.document));
+          }
+
+          if (item.readTime && !result.readTime) {
+            result.readTime = item.readTime;
+          }
+
+          if (item.skippedResults) {
+            result.skippedResults = item.skippedResults;
+          }
+
+          if (item.transaction) {
+            result.transaction = item.transaction;
+          }
+          return result;
+        },
+        { documents: [], readTime: '', skippedResults: 0, transaction: '' }
+      );
+
+      return queryResult;
     },
     update: async (options: UpdateDocumentOptions) => {
       const {
