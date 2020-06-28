@@ -4,10 +4,13 @@ import firestoreDocumentParser from 'firestore-parser';
 import {
   IDocument,
   DocumentOptions,
+  BatchGetDocumentOptions,
   CreateDocumentOptions,
   DeleteDocumentOptions,
   QueryDocumentOptions,
   UpdateDocumentOptions,
+  BatchGetResult,
+  BatchGetResponseItem,
   QueryResponseItem,
   QueryResult,
 } from '../../types/documents';
@@ -17,6 +20,56 @@ let documents: IDocument;
 
 documents = function () {
   return {
+    batchGet: async (options: BatchGetDocumentOptions) => {
+      const { documents, fieldsToReturn, consistencySelector } = options;
+      const path = `${this.database}/documents:batchGet`;
+      const payload = {
+        documents: documents.map((doc) => {
+          const basePath = this.baseURL.substring(
+            this.baseURL.indexOf('projects')
+          );
+          return `${basePath}${this.database}/documents/${doc.collectionId}/${doc.docId}`;
+        }),
+        ...(fieldsToReturn && { mask: { fieldPaths: fieldsToReturn } }),
+        ...consistencySelector,
+      };
+
+      const response = await this.post(path, payload);
+
+      const batchGetResult: BatchGetResult = response.reduce(
+        (result: BatchGetResult, item: BatchGetResponseItem) => {
+          if (item?.found) {
+            item.found.readTime = item.readTime;
+            delete item.readTime;
+            result.documents.push(firestoreDocumentParser(item.found));
+            result.documentCount = result.documents.length;
+          }
+
+          if (!result.readTime && item.readTime) {
+            result.readTime = item.readTime;
+          }
+
+          if (item.missing) {
+            result.missing.push(item.missing);
+          }
+
+          if (item.transaction) {
+            result.transaction = item.transaction;
+          }
+          return result;
+        },
+        {
+          documents: [],
+          documentCount: 0,
+          missing: [],
+          readTime: '',
+          transaction: '',
+        }
+      );
+
+      return batchGetResult;
+    },
+
     create: async (options: CreateDocumentOptions) => {
       const { collectionId, docId, data, fieldsToReturn } = options;
       let path = `${this.database}/documents/${collectionId}`;
@@ -35,6 +88,7 @@ documents = function () {
 
       return firestoreDocumentParser(doc);
     },
+
     delete: async (options: DeleteDocumentOptions) => {
       const { collectionId, docId, currentDocument } = options;
       let path = `${this.database}/documents/${collectionId}/${docId}`;
@@ -51,6 +105,7 @@ documents = function () {
 
       return this.delete(path);
     },
+
     get: async (options: DocumentOptions) => {
       const { collectionId, docId, fieldsToReturn } = options;
       const collectionPath = `${this.database}/documents/${collectionId}`;
@@ -88,6 +143,7 @@ documents = function () {
         return firestoreDocumentParser(doc);
       }
     },
+
     runQuery: async (options: QueryDocumentOptions) => {
       const {
         collectionId,
@@ -113,7 +169,7 @@ documents = function () {
             result.documentCount = result.documents.length;
           }
 
-          if (item.readTime && !result.readTime) {
+          if (!result.readTime && item.readTime) {
             result.readTime = item.readTime;
           }
 
@@ -137,6 +193,7 @@ documents = function () {
 
       return queryResult;
     },
+
     update: async (options: UpdateDocumentOptions) => {
       const {
         collectionId,

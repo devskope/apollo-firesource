@@ -59,6 +59,41 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
   - **methods** (_async_):
 
+    - `batchGet(options) => batchGetResult`
+
+      Get multiple documents from database.
+
+      - **options** (_object_)
+
+        ```javascript
+        {
+          documents: { collectionId: string; docId: string }[], // (required) Array of { collectionId, docId } objects to build document paths from
+          fieldsToReturn: string[], // (optional) array of document fields to include in response
+
+          // (optional)
+          consistencySelector: {
+            // can be only one of the following:
+            transaction: string,  // Reads documents in a transaction: A base64-encoded string.
+            newTransaction: TransactionOptions, // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
+            readTime: string
+          }
+        }
+        ```
+
+      - **returns** (object): BatchGetResult
+        ```javascript
+        {
+          documents: Array,
+          documentCount:number,
+          missing: Array,
+          readTime: string,
+          transaction: string
+        }
+        ```
+
+      <br />
+
+
     - `create(options) => DocumentData`
 
       Insert new document into a collection.
@@ -66,20 +101,20 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **options** (_object_)
 
         ```javascript
-          {
-            collectionId: string, // (required)
-            docId: string // (optional) custom document id
-            fieldsToReturn: string[] // (optional) array of fields to include in response (mask)
-            data: {
-              name: string // (optional) document resource name
-              fields: {
-                "fieldName": {
-                  // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
-                  valueType: value
-                  }
+        {
+          collectionId: string, // (required)
+          docId: string // (optional) custom document id
+          fieldsToReturn: string[] // (optional) array of fields to include in response (mask)
+          data: {
+            name: string // (optional) document resource name
+            fields: {
+              "fieldName": {
+                // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+                valueType: value
               }
             }
           }
+        }
         ```
 
       - **returns** (_object_): The newly created document
@@ -93,20 +128,20 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **options** (_object_)
 
         ```javascript
-          {
-            collectionId: string, // (required)
-            docId: string, // (required)
+        {
+          collectionId: string, // (required)
+          docId: string, // (required)
 
-            // (optional)
-            currentDocument: {
-                exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
-                updateTime: string // (optional) Timestamp format: When set, the target document must exist and have been last updated at that time
-              }
+          // (optional)
+          currentDocument: {
+            exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+            updateTime: string // (optional) Timestamp format: When set, the target document must exist and have been last updated at that time
           }
+        }
         ```
 
       - **returns** (_object_):
-        ```
+        ```javascript
         {
           deleted: boolean
         }
@@ -120,11 +155,11 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
       - **options** (_object_)
         ```javascript
-          {
-            collectionId, // string (required)
-            docId, // string (optional) id of single doc to retrieve
-            fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
-          }
+        {
+          collectionId, // string (required)
+          docId, // string (optional) id of single doc to retrieve
+          fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+        }
         ```
       - **returns** (_object | Array_): Documents matching provided options or an empty array if none.
 
@@ -137,21 +172,21 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **options** (_object_)
 
         ```javascript
-          {
-            collectionId: string, // optional
-            docId: string, // optional
+        {
+          collectionId: string, // (optional)
+          docId: string, // (optional)
 
-            // (required) https://cloud.google.com/firestore/docs/reference/rest/v1/StructuredQuery
-            structuredQuery: object,
+          // (required) https://cloud.google.com/firestore/docs/reference/rest/v1/StructuredQuery
+          structuredQuery: object,
 
-            // (optional)
-            consistencySelector:{
-              // can be only one of the following:
-              transaction: string,
-              newTransaction: TransactionOptions, // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
-              readTime: string
-            }
+          // (optional)
+          consistencySelector: {
+            // can be only one of the following:
+            transaction: string, // Reads documents in a transaction: A base64-encoded
+            newTransaction: TransactionOptions, // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
+            readTime: string
           }
+        }
         ```
 
       - **returns** (object): QueryResult
@@ -174,30 +209,30 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **options** (_object_)
 
         ```javascript
-          {
-            collectionId: string, // (required)
-            docId: string, // (required)  document id
-            fieldsToReturn: string[], // (optional) array of fields to include in response (mask)
-            data: {
-              name: string, // (optional) document resource name
-              fields: {
-                "fieldName": {
-                  // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
-                  valueType: value
-                  }
+        {
+          collectionId: string, // (required)
+          docId: string, // (required)  document id
+          fieldsToReturn: string[], // (optional) array of fields to include in response (mask)
+          data: {
+            name: string, // (optional) document resource name
+            fields: {
+              "fieldName": {
+                // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+                valueType: value
               }
-            },
-            updateOptions: {
-               updateAll: boolean, // (optional) update all fields
-               fieldsToUpdate: string[], // (optional, required if !updateAll) array of fields to update
+            }
+          },
+          updateOptions: {
+            updateAll: boolean, // (optional) update all fields
+            fieldsToUpdate: string[], // (optional, required if !updateAll) array of fields to update
 
-               // (optional)
-               currentDocument: {
-                 exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
-                 updateTime: string // (optional) Timestamp format When set, the target document must exist and have been last updated at that time
-               }
+            // (optional)
+            currentDocument: {
+              exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+              updateTime: string // (optional) Timestamp format When set, the target document must exist and have been last updated at that time
             }
           }
+        }
         ```
 
       - **returns** (_object_): The updated document
