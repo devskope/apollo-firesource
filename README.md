@@ -47,12 +47,12 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
   - **config** (_object_):
     ```javascript
-      {
-        projectId: string, // (required) Firestore project ID
-        version: 'v1', // string (optional)
-        resource: 'databases', // string: <'databases' | 'locations'> (optional)
-        database: '(default)', // string (optional)
-      }
+    {
+      projectId: string, // (required) Firestore project ID
+      version: 'v1', // string (optional)
+      resource: 'databases', // string: <'databases' | 'locations'> (optional)
+      database: '(default)', // string (optional)
+    }
     ```
 
   ### Documents - `firestore.documents()`
@@ -93,6 +93,33 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
       <br />
 
+    - `beginTransaction(options) => object`
+
+      Start a new transaction.
+
+      - **options** (_object_): optional
+
+        ```javascript
+        // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
+        {
+          readOnly: {
+            readTime: string // (optional): Timestamp format
+          },
+          readWrite: {
+            retryTransaction: string // (optional)
+          }
+
+        }
+        ```
+
+      - **returns** (object):
+        ```javascript
+        {
+          transaction: string;
+        }
+        ```
+
+      <br />
 
     - `create(options) => DocumentData`
 
@@ -143,7 +170,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **returns** (_object_):
         ```javascript
         {
-          deleted: boolean
+          deleted: boolean;
         }
         ```
 

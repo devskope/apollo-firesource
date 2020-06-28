@@ -6,7 +6,7 @@ import { FireSourceConfig } from './types/firesource';
 import { IDocument } from './types/documents/index';
 
 class FireSource extends RESTDataSource {
-  private database: string;
+  database: string;
   documents: IDocument;
 
   constructor({

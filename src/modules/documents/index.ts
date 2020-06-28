@@ -1,6 +1,8 @@
 // @ts-ignore
 import firestoreDocumentParser from 'firestore-parser';
+import { UserInputError } from 'apollo-server-errors';
 
+import FireSource from 'firesource';
 import {
   IDocument,
   DocumentOptions,
@@ -13,12 +15,13 @@ import {
   BatchGetResponseItem,
   QueryResponseItem,
   QueryResult,
+  TransactionOptions,
 } from '../../types/documents';
 import { buildRecursiveQueryString } from '../../utils';
 
 let documents: IDocument;
 
-documents = function () {
+documents = function (this: FireSource) {
   return {
     batchGet: async (options: BatchGetDocumentOptions) => {
       const { documents, fieldsToReturn, consistencySelector } = options;
@@ -70,6 +73,19 @@ documents = function () {
       return batchGetResult;
     },
 
+    beginTransaction: async (options: TransactionOptions) => {
+      const { readOnly, readWrite } = options;
+      const path = `${this.database}/documents:beginTransaction`;
+
+      if (readOnly && readWrite) {
+        throw new UserInputError(
+          `transaction options can only be one of: readOnly | readWrite`
+        );
+      }
+
+      return this.post(path, { options });
+    },
+
     create: async (options: CreateDocumentOptions) => {
       const { collectionId, docId, data, fieldsToReturn } = options;
       let path = `${this.database}/documents/${collectionId}`;
@@ -103,7 +119,10 @@ documents = function () {
         }
       }
 
-      return this.delete(path);
+      const response = await this.delete(path);
+      response.deleted = true;
+
+      return response;
     },
 
     get: async (options: DocumentOptions) => {

@@ -2,9 +2,12 @@ import { DocumentData } from '@firebase/firestore-types';
 
 export interface IDocument {
   (): {
-    create(options: CreateDocumentOptions): Promise<DocumentData>;
     batchGet(options: BatchGetDocumentOptions): Promise<BatchGetResult>;
-    delete(options: DeleteDocumentOptions): Promise<{ deleted?: boolean }>;
+    beginTransaction(
+      options: TransactionOptions
+    ): Promise<{ transaction: string }>;
+    create(options: CreateDocumentOptions): Promise<DocumentData>;
+    delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
     get(options: DocumentOptions): Promise<DocumentData | DocumentData[]>;
     update(options: UpdateDocumentOptions): Promise<DocumentData>;
     runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
@@ -107,15 +110,7 @@ interface Transaction {
 }
 
 interface NewTransaction {
-  newTransaction:
-    | {
-        readOnly: { readTime: string };
-        readWrite?: never;
-      }
-    | {
-        readWrite: { retryTransaction: string };
-        readOnly?: never;
-      };
+  newTransaction: TransactionOptions;
   readTime?: never;
   transaction?: never;
 }
@@ -125,8 +120,19 @@ interface ReadTime {
   transaction?: never;
   newTransaction?: never;
 }
+
 type ConsistencySelector = Transaction | NewTransaction | ReadTime;
 
 type currentDocument =
   | { exists: boolean; updateTime?: undefined }
   | { exists?: undefined; updateTime: string };
+
+export type TransactionOptions =
+  | {
+      readOnly: { readTime?: string };
+      readWrite?: never;
+    }
+  | {
+      readWrite: { retryTransaction?: string };
+      readOnly?: never;
+    };
