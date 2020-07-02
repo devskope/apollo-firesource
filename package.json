@@ -1,6 +1,6 @@
 {
   "name": "@devskope/apollo-firesource",
-  "version": "0.0.0",
+  "version": "0.0.0-beta.1",
   "author": "devskope",
   "description": "Firestore(REST) datasource for Apollo Server",
   "main": "dist/firesource.js",
