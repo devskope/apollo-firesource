@@ -5,6 +5,19 @@ export const gtoken = new GoogleToken({
   scope: ['https://www.googleapis.com/auth/datastore'],
 });
 
+export const buildQueryString = (
+  path: string,
+  queryKey: string,
+  value: string
+): string => {
+  if (!path.includes('?')) path += '?';
+  if (!path.endsWith('?')) path += '&';
+
+  path += `${queryKey}=${value}`;
+
+  return path;
+};
+
 export const buildRecursiveQueryString = (
   path: string,
   queryKey: string,

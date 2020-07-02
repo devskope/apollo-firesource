@@ -16,8 +16,9 @@ import {
   QueryResponseItem,
   QueryResult,
   TransactionOptions,
+  ListDocumentOptions,
 } from '../../types/documents';
-import { buildRecursiveQueryString } from '../../utils';
+import { buildQueryString, buildRecursiveQueryString } from '../../utils';
 
 let documents: IDocument;
 
@@ -161,6 +162,82 @@ documents = function (this: FireSource) {
 
         return firestoreDocumentParser(doc);
       }
+    },
+
+    list: async (options: ListDocumentOptions) => {
+      const { collectionPath, fieldsToReturn } = options;
+      const {
+        orderBy,
+        pageSize,
+        pageToken,
+        showMissing,
+        consistencySelector,
+      } = options.queryOptions;
+      let path = `${this.database}/documents`;
+
+      if (
+        typeof collectionPath !== 'string' ||
+        !collectionPath.startsWith('/') ||
+        collectionPath.endsWith('/')
+      ) {
+        throw new UserInputError(
+          `collectionPath must start with and not end with '/'`
+        );
+      }
+
+      if (orderBy && showMissing) {
+        throw new UserInputError(
+          `only one of 'orderBy' or 'showMissing' can be present on queryOptions`
+        );
+      }
+
+      if (consistencySelector?.transaction && consistencySelector?.readTime) {
+        throw new UserInputError(
+          `only one of 'readTime' or 'transaction' can be present on queryOptions`
+        );
+      }
+
+      path += collectionPath;
+
+      if (pageToken) path = buildQueryString(path, 'pageToken', pageToken);
+      if (pageSize) path = buildQueryString(path, 'pageSize', String(pageSize));
+      if (orderBy) path = buildQueryString(path, 'orderBy', String(orderBy));
+      if (showMissing) {
+        path = buildQueryString(path, 'showMissing', String(showMissing));
+      }
+
+      if (consistencySelector?.transaction) {
+        path = buildQueryString(
+          path,
+          'transaction',
+          consistencySelector?.transaction
+        );
+      }
+
+      if (consistencySelector?.readTime) {
+        path = buildQueryString(
+          path,
+          'readTime',
+          consistencySelector?.readTime
+        );
+      }
+
+      if (fieldsToReturn) {
+        path = buildRecursiveQueryString(
+          path,
+          'mask.fieldPaths',
+          fieldsToReturn
+        );
+      }
+
+      const response = await this.get(path);
+
+      if (response.documents) {
+        response.documents = response.documents.map(firestoreDocumentParser);
+        response.documentCount = response.documents.length;
+      } else response.documentCount = 0;
+
+      return response;
     },
 
     runQuery: async (options: QueryDocumentOptions) => {

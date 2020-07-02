@@ -184,11 +184,53 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
         ```javascript
         {
           collectionId, // string (required)
-          docId, // string (optional) id of single doc to retrieve
-          fieldsToReturn, // string[] (optional) array of fields to include in response (mask)
+          docId, // string (optional) ID of single doc to retrieve
+          fieldsToReturn, // string[] (optional) Array of fields to include in response (mask)
         }
         ```
       - **returns** (_object | Array_): Documents matching provided options or an empty array if none.
+
+      <br />
+
+    - `list(options) => ListResult`
+
+      Get a list of documents
+
+      - **options** (_object_)
+
+        ```javascript
+        {
+          collectionPath: string;    // (required) Full collection path relative to database ex: '/users'
+          fieldsToReturn: string[];  // (optional) array of fields to include in response (mask)
+
+          // (optional)
+          queryOptions: {
+            pageSize: number,      // (optional) Maximum number of documents to return
+            pageToken: string,     // (optional) The nextPageToken value returned from a previous List request, if any.
+            showMissing: boolean,  // (optional)  Show missing documents. Requests with showMissing may not specify orderBy.
+            orderBy: string,       // (optional) The order to sort results by. For example: priority desc, name.
+
+            // (optional)
+            consistencySelector: {
+              // can be only one of the following:
+              transaction: string,   // (optional) Reads documents in a transaction: A base64-encoded string
+              readTime: string     // (optional) string (Timestamp format): Reads documents as they were at the given time
+            }
+          }
+        ```
+
+
+        }
+        ```
+
+      - **returns** (object): ListResult
+        ```javascript
+        {
+          documents: Array,
+          documentCount:number,
+          nextPageToken: Array  // The next page token.
+        }
+        ```
 
       <br />
 
@@ -209,7 +251,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
           // (optional)
           consistencySelector: {
             // can be only one of the following:
-            transaction: string, // Reads documents in a transaction: A base64-encoded
+            transaction: string, // Reads documents in a transaction: A base64-encoded string
             newTransaction: TransactionOptions, // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
             readTime: string
           }

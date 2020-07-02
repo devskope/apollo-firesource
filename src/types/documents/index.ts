@@ -9,6 +9,7 @@ export interface IDocument {
     create(options: CreateDocumentOptions): Promise<DocumentData>;
     delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
     get(options: DocumentOptions): Promise<DocumentData | DocumentData[]>;
+    list(options: ListDocumentOptions): Promise<ListResult>;
     update(options: UpdateDocumentOptions): Promise<DocumentData>;
     runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
   };
@@ -27,6 +28,12 @@ export interface BatchGetResult {
   readTime: string;
   missing: string[];
   transaction: string;
+}
+
+export interface ListResult {
+  documents?: [];
+  documentCount: number;
+  nextPageToken: string;
 }
 
 export interface QueryResponseItem {
@@ -72,6 +79,27 @@ export interface DeleteDocumentOptions extends DocumentOptions {
   currentDocument?: currentDocument;
 }
 
+export interface ListQueryBaseOptions {
+  pageSize?: number;
+  pageToken?: string;
+  consistencySelector?: Transaction | ReadTime;
+}
+
+export interface ListWithWhere extends ListQueryBaseOptions {
+  orderBy?: string;
+  showMissing?: never;
+}
+export interface ListWithMissing extends ListQueryBaseOptions {
+  showMissing?: boolean;
+  orderBy?: never;
+}
+
+export interface ListDocumentOptions {
+  collectionPath: string;
+  fieldsToReturn?: string[];
+  queryOptions?: ListWithWhere | ListWithMissing;
+}
+
 export interface QueryDocumentOptions {
   structuredQuery: {
     select?: { fields: object[] };
@@ -105,8 +133,8 @@ export interface UpdateDocumentOptions extends CreateDocumentOptions {
 
 interface Transaction {
   transaction: string;
-  newTransaction: never;
-  readTime: never;
+  newTransaction?: never;
+  readTime?: never;
 }
 
 interface NewTransaction {
