@@ -17,8 +17,9 @@ export interface IDocument {
       idCount: number;
       nextPageToken?: 'string';
     }>;
-    update(options: UpdateDocumentOptions): Promise<DocumentData>;
+    rollBack(transaction: string): Promise<{ rolledBack: true }>;
     runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
+    update(options: UpdateDocumentOptions): Promise<DocumentData>;
   };
 }
 

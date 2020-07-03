@@ -256,6 +256,28 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
       <br />
 
+    - `rollBack(options) => RollbackResult`
+
+      Roll back a transaction.
+
+      - **options** (_object_)
+
+        ```javascript
+        {
+          transaction: string; // (required) Transaction to rollback A base64-encoded string
+        }
+        ```
+
+      - **returns** (object): RollbackResult
+        ```javascript
+        {
+          rolledBack: true;
+        }
+        ```
+
+      <br />
+
+
     - `runQuery(options) => queryResult`
 
       Run a query against the database.

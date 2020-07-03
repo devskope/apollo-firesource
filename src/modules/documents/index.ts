@@ -263,6 +263,15 @@ documents = function (this: FireSource) {
       return response;
     },
 
+    rollBack: async (transaction: string) => {
+      const path = `${this.database}/documents:rollback`;
+
+      const response = await this.post(path, { transaction });
+      response.rolledBack = true;
+
+      return response;
+    },
+
     runQuery: async (options: QueryDocumentOptions) => {
       const {
         collectionId,
