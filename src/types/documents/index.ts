@@ -10,6 +10,13 @@ export interface IDocument {
     delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
     get(options: DocumentOptions): Promise<DocumentData | DocumentData[]>;
     list(options: ListDocumentOptions): Promise<ListResult>;
+    listCollectionIds(
+      options: ListCollectionIdOptions
+    ): Promise<{
+      collectionIds?: string[];
+      idCount: number;
+      nextPageToken?: 'string';
+    }>;
     update(options: UpdateDocumentOptions): Promise<DocumentData>;
     runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
   };
@@ -77,6 +84,12 @@ export interface CreateDocumentOptions extends DocumentOptions {
 export interface DeleteDocumentOptions extends DocumentOptions {
   docId: string;
   currentDocument?: currentDocument;
+}
+
+export interface ListCollectionIdOptions {
+  documentPath: string;
+  pageSize?: number;
+  pageToken?: string;
 }
 
 export interface ListQueryBaseOptions {

@@ -30,3 +30,9 @@ export const buildRecursiveQueryString = (
 
   return path.endsWith('&') ? path.slice(0, -1) : path;
 };
+
+export const isvalidSubPath = (path: string) => {
+  return (
+    typeof path === 'string' && path.startsWith('/') && !path.endsWith('/')
+  );
+};

@@ -217,9 +217,6 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
               readTime: string     // (optional) string (Timestamp format): Reads documents as they were at the given time
             }
           }
-        ```
-
-
         }
         ```
 
@@ -228,7 +225,32 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
         {
           documents: Array,
           documentCount:number,
-          nextPageToken: Array  // The next page token.
+          nextPageToken: string  // The next page token.
+        }
+        ```
+
+      <br />
+
+    - `listCollectionIds(options) => ListCollectionIdsResult`
+
+      List IDs of collections that are children of given document
+
+      - **options** (_object_)
+
+        ```javascript
+        {
+          documentPath: string;   // (required) Full path of parent document with child collection ids to list ex: '/chatrooms/roomx'
+          pageSize: number,       // (optional) Maximum number of ids to return
+          pageToken: string,     // (optional) The nextPageToken value returned from a previous listCollectionIds request, if any.
+        }
+        ```
+
+      - **returns** (object): ListCollectionIdsResult
+        ```javascript
+        {
+          collectionIds: string[],
+          idCount: number,
+          nextPageToken: string  // The next page token.
         }
         ```
 

@@ -9,6 +9,8 @@ import {
   BatchGetDocumentOptions,
   CreateDocumentOptions,
   DeleteDocumentOptions,
+  ListCollectionIdOptions,
+  ListDocumentOptions,
   QueryDocumentOptions,
   UpdateDocumentOptions,
   BatchGetResult,
@@ -16,9 +18,12 @@ import {
   QueryResponseItem,
   QueryResult,
   TransactionOptions,
-  ListDocumentOptions,
 } from '../../types/documents';
-import { buildQueryString, buildRecursiveQueryString } from '../../utils';
+import {
+  buildQueryString,
+  buildRecursiveQueryString,
+  isvalidSubPath,
+} from '../../utils';
 
 let documents: IDocument;
 
@@ -175,11 +180,7 @@ documents = function (this: FireSource) {
       } = options.queryOptions;
       let path = `${this.database}/documents`;
 
-      if (
-        typeof collectionPath !== 'string' ||
-        !collectionPath.startsWith('/') ||
-        collectionPath.endsWith('/')
-      ) {
+      if (!isvalidSubPath(collectionPath)) {
         throw new UserInputError(
           `collectionPath must start with and not end with '/'`
         );
@@ -236,6 +237,28 @@ documents = function (this: FireSource) {
         response.documents = response.documents.map(firestoreDocumentParser);
         response.documentCount = response.documents.length;
       } else response.documentCount = 0;
+
+      return response;
+    },
+
+    listCollectionIds: async (options: ListCollectionIdOptions) => {
+      const { documentPath, pageSize, pageToken } = options;
+
+      let path = `${this.database}/documents`;
+
+      if (!isvalidSubPath(documentPath)) {
+        throw new UserInputError(
+          `documentPath must start with and not end with '/'`
+        );
+      }
+
+      path += documentPath + ':listCollectionIds';
+
+      const response = await this.post(path, { pageSize, pageToken });
+
+      if (response.collectionIds) {
+        response.idCount = response.collectionIds.length;
+      } else response.idCount = 0;
 
       return response;
     },
