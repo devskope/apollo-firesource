@@ -1,4 +1,3 @@
-import { DocumentData } from '@firebase/firestore-types';
 import { PickField } from './../firesource';
 
 export interface IDocument {
@@ -15,7 +14,7 @@ export interface IDocument {
     }>;
     create(options: CreateDocumentOptions): Promise<DocumentData>;
     delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
-    get(options: DocumentOptions): Promise<DocumentData | DocumentData[]>;
+    get(options: DocumentOptions): Promise<DocumentData & DocumentData[]>;
     list(options: ListDocumentOptions): Promise<ListResult>;
     listCollectionIds(
       options: ListCollectionIdOptions
@@ -28,6 +27,85 @@ export interface IDocument {
     runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
     update(options: UpdateDocumentOptions): Promise<DocumentData>;
   };
+}
+
+export interface BatchGetDocumentOptions {
+  documents: { collectionId: string; docId: string }[];
+  fieldsToReturn?: string[];
+  consistencySelector?: consistencySelector;
+}
+
+export interface DocumentOptions {
+  collectionId: string;
+  docId?: string;
+  fieldsToReturn?: string[];
+}
+
+export interface CreateDocumentOptions extends DocumentOptions {
+  data: {
+    name?: string;
+    fields: {
+      [key: string]: object;
+    };
+  };
+}
+
+export interface DeleteDocumentOptions extends DocumentOptions {
+  docId: string;
+  currentDocument?: currentDocument;
+}
+
+export interface ListCollectionIdOptions {
+  documentPath: string;
+  pageSize?: number;
+  pageToken?: string;
+}
+
+export interface ListDocumentOptions {
+  collectionPath: string;
+  fieldsToReturn?: string[];
+  queryOptions?: ListWithWhere | ListWithMissing;
+}
+
+export interface QueryDocumentOptions {
+  structuredQuery: {
+    select?: { fields: object[] };
+    from?: { collectionId: string; allDescendants?: boolean }[];
+    where?: object;
+    orderBy?: object;
+    startAt?: object;
+    endAt?: object;
+    offset?: number;
+    limit?: number;
+  };
+  collectionId?: string;
+  docId?: string;
+  consistencySelector?: consistencySelector;
+}
+
+export interface UpdateDocumentOptions extends CreateDocumentOptions {
+  docId: string;
+  updateOptions?:
+    | (PickField<UpdateOptions, 'fieldsToUpdate'> & {
+        currentDocument?: currentDocument;
+      })
+    | (PickField<UpdateOptions, 'updateAll'> & {
+        currentDocument?: currentDocument;
+      });
+}
+
+export interface TransactionCommitOptions {
+  transaction: string;
+  writes: {
+    currentDocument?: currentDocument;
+    operation:
+      | PickField<TransformOperations, 'delete'>
+      | PickField<TransformOperations, 'update'>
+      | PickField<TransformOperations, 'transform'>;
+    updateOptions?:
+      | PickField<UpdateOptions, 'fieldsToUpdate'>
+      | PickField<UpdateOptions, 'updateAll'>;
+  }[];
 }
 
 export interface BatchGetResponseItem {
@@ -68,106 +146,22 @@ export interface QueryResult {
   transaction: string;
 }
 
-export interface BatchGetDocumentOptions {
-  documents: { collectionId: string; docId: string }[];
-  fieldsToReturn?: string[];
-  consistencySelector?: ConsistencySelector;
+export type TransactionOptions =
+  | PickField<TransactionMode, 'readOnly'>
+  | PickField<TransactionMode, 'readWrite'>;
+
+interface Consistency {
+  transaction: string;
+  newTransaction: TransactionOptions;
+  readTime: string;
 }
 
-export interface DocumentOptions {
-  collectionId: string;
-  docId?: string;
-  fieldsToReturn?: string[];
-}
-
-export interface CreateDocumentOptions extends DocumentOptions {
-  data: {
-    name?: string;
-    fields: {
-      [key: string]: object;
-    };
-  };
-}
-
-export interface DeleteDocumentOptions extends DocumentOptions {
-  docId: string;
-  currentDocument?: currentDocument;
-}
-
-export interface ListCollectionIdOptions {
-  documentPath: string;
-  pageSize?: number;
-  pageToken?: string;
-}
-
-export interface ListQueryBaseOptions {
-  pageSize?: number;
-  pageToken?: string;
-  consistencySelector?: Transaction | ReadTime;
-}
-
-export interface ListWithWhere extends ListQueryBaseOptions {
-  orderBy?: string;
-  showMissing?: never;
-}
-export interface ListWithMissing extends ListQueryBaseOptions {
-  showMissing?: boolean;
-  orderBy?: never;
-}
-
-export interface ListDocumentOptions {
-  collectionPath: string;
-  fieldsToReturn?: string[];
-  queryOptions?: ListWithWhere | ListWithMissing;
-}
-
-export interface QueryDocumentOptions {
-  structuredQuery: {
-    select?: { fields: object[] };
-    from?: { collectionId: string; allDescendants?: boolean }[];
-    where?: object;
-    orderBy?: object;
-    startAt?: object;
-    endAt?: object;
-    offset?: number;
-    limit?: number;
-  };
-  collectionId?: string;
-  docId?: string;
-  consistencySelector?: ConsistencySelector;
-}
-
-export interface UpdateDocumentOptions extends CreateDocumentOptions {
-  docId: string;
-  updateOptions:
-    | {
-        updateAll: true;
-        fieldsToUpdate?: never;
-        currentDocument?: currentDocument;
-      }
-    | {
-        fieldsToUpdate: string[];
-        updateAll?: never;
-        currentDocument?: currentDocument;
-      };
-}
-
-interface DeleteOperation {
-  delete: string;
-  update?: never;
-  transform?: never;
-}
-
-interface UpdateOperation {
-  update: {
-    documentPath: string;
-    fields: {
-      [key: string]: object;
-    };
-    [key: string]: any;
-  };
-  delete?: never;
-  transform?: never;
+interface DocumentData {
+  name: string;
+  fields: object;
+  createTime: string;
+  updateTime: string;
+  [k: string]: any;
 }
 
 interface FieldTransformTypes {
@@ -179,66 +173,56 @@ interface FieldTransformTypes {
   removeAllFromArray: object;
 }
 
-interface TransformOperation {
+interface ListQueryBaseOptions {
+  pageSize?: number;
+  pageToken?: string;
+  consistencySelector?: consistencySelector;
+}
+
+interface ListWithMissing extends ListQueryBaseOptions {
+  showMissing?: boolean;
+  orderBy?: never;
+}
+
+interface ListWithWhere extends ListQueryBaseOptions {
+  orderBy?: string;
+  showMissing?: never;
+}
+
+interface TransactionMode {
+  readOnly: { readTime?: string };
+  readWrite: { retryTransaction?: string };
+}
+
+interface TransformOperations {
+  delete: string;
+  update: {
+    documentPath: string;
+    fields: {
+      [key: string]: object;
+    };
+    [key: string]: any;
+  };
   transform: {
     documentPath: string;
     fieldTransforms: { fieldPath: string; transformType: transformType }[];
     [key: string]: any;
   };
-  update?: never;
-  delete?: never;
 }
 
-export interface TransactionCommitOptions {
-  transaction: string;
-  writes: {
-    operation: DeleteOperation | UpdateOperation | TransformOperation;
-    currentDocument?: currentDocument;
-    updateOptions?:
-      | {
-          updateAll: true;
-          fieldsToUpdate?: never;
-        }
-      | {
-          fieldsToUpdate: string[];
-          updateAll?: never;
-        };
-  }[];
+interface UpdateOptions {
+  updateAll: true;
+  fieldsToUpdate: string[];
 }
 
-interface Transaction {
-  transaction: string;
-  newTransaction?: never;
-  readTime?: never;
-}
-
-interface NewTransaction {
-  newTransaction: TransactionOptions;
-  readTime?: never;
-  transaction?: never;
-}
-
-interface ReadTime {
-  readTime: string;
-  transaction?: never;
-  newTransaction?: never;
-}
-
-type ConsistencySelector = Transaction | NewTransaction | ReadTime;
+type consistencySelector =
+  | PickField<Consistency, 'transaction'>
+  | PickField<Consistency, 'newTransaction'>
+  | PickField<Consistency, 'readTime'>;
 
 type currentDocument =
   | { exists: boolean; updateTime?: never }
   | { exists?: never; updateTime: string };
-
-export type TransactionOptions =
-  | {
-      readOnly: { readTime?: string };
-      readWrite?: never;
-    }
-  | {
-      readWrite: { retryTransaction?: string };
-      readOnly?: never;
-    };
 
 type transformType =
   | PickField<FieldTransformTypes, 'setToServerValue'>
