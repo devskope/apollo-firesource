@@ -13,6 +13,7 @@ import {
   ListDocumentOptions,
   QueryDocumentOptions,
   UpdateDocumentOptions,
+  TransactionCommitOptions,
   BatchGetResult,
   BatchGetResponseItem,
   QueryResponseItem,
@@ -34,10 +35,7 @@ documents = function (this: FireSource) {
       const path = `${this.database}/documents:batchGet`;
       const payload = {
         documents: documents.map((doc) => {
-          const basePath = this.baseURL.substring(
-            this.baseURL.indexOf('projects')
-          );
-          return `${basePath}${this.database}/documents/${doc.collectionId}/${doc.docId}`;
+          return `${this.documentBasePath}/${doc.collectionId}/${doc.docId}`;
         }),
         ...(fieldsToReturn && { mask: { fieldPaths: fieldsToReturn } }),
         ...consistencySelector,
@@ -90,6 +88,112 @@ documents = function (this: FireSource) {
       }
 
       return this.post(path, { options });
+    },
+
+    commit: async (options: TransactionCommitOptions) => {
+      const { transaction } = options;
+      const path = `${this.database}/documents:commit`;
+
+      if (typeof transaction !== 'string') {
+        throw new UserInputError('transaction string must be proided');
+      }
+
+      if (!options.writes || !(options.writes instanceof Array)) {
+        throw new UserInputError(
+          'At least one write operation must be provided in the writes array'
+        );
+      }
+
+      const writes = options.writes.map((write) => {
+        const { operation, currentDocument, updateOptions } = write;
+        const updateMask: { fieldPaths?: string[] } = {};
+
+        if (!operation || (operation && Object.keys(operation).length !== 1)) {
+          throw new UserInputError('only one operation mode must be specified');
+        }
+
+        if (operation.transform) {
+          const { documentPath, fieldTransforms } = operation.transform;
+
+          if (!isvalidSubPath(documentPath)) {
+            throw new UserInputError(
+              `documentPath must start with and not end with '/'`
+            );
+          }
+
+          operation.transform.document = this.documentBasePath + documentPath;
+          delete operation.transform.documentPath;
+          operation.transform.fieldTransforms = fieldTransforms.map((t) => {
+            const transform = { ...t, ...t.transformType };
+            delete transform.transformType;
+            return transform;
+          });
+        }
+
+        if (operation.update) {
+          const { documentPath } = operation.update;
+
+          if (!isvalidSubPath(documentPath)) {
+            throw new UserInputError(
+              `documentPath must start with and not end with '/'`
+            );
+          }
+
+          operation.update.name = this.documentBasePath + documentPath;
+          delete operation.update.documentPath;
+        }
+
+        if (updateOptions) {
+          const { fieldsToUpdate, updateAll } = updateOptions;
+
+          if (!operation.update) {
+            throw new UserInputError(
+              'updateOptions can only be provided with an update operation'
+            );
+          }
+
+          if (fieldsToUpdate && updateAll) {
+            throw new UserInputError(
+              'updateOptions must have only one property'
+            );
+          }
+
+          if (fieldsToUpdate) {
+            if (!(fieldsToUpdate instanceof Array) || !fieldsToUpdate.length) {
+              throw new UserInputError(
+                'fieldsToUpdate must be a non empty array of field names'
+              );
+            }
+
+            updateMask.fieldPaths = fieldsToUpdate;
+          }
+
+          if (updateAll) {
+            updateMask.fieldPaths = Object.keys(operation.update.fields);
+          }
+        }
+
+        if (
+          currentDocument &&
+          (typeof currentDocument !== 'object' ||
+            (currentDocument.exists && currentDocument.updateTime) ||
+            !(currentDocument.exists || currentDocument.updateTime))
+        ) {
+          throw new UserInputError(
+            'only "exists" or "updateTime" must be specified on currentDocument'
+          );
+        }
+
+        return {
+          ...(currentDocument && { currentDocument }),
+          ...(updateMask.fieldPaths && { updateMask }),
+          ...(operation.delete && { delete: operation.delete }),
+          ...(operation.transform && { transform: operation.transform }),
+          ...(operation.update && { update: operation.update }),
+        };
+      });
+
+      return this.post(path, { transaction, writes });
     },
 
     create: async (options: CreateDocumentOptions) => {

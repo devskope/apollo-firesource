@@ -1,4 +1,5 @@
 import { DocumentData } from '@firebase/firestore-types';
+import { PickField } from './../firesource';
 
 export interface IDocument {
   (): {
@@ -6,6 +7,12 @@ export interface IDocument {
     beginTransaction(
       options: TransactionOptions
     ): Promise<{ transaction: string }>;
+    commit(
+      options: TransactionCommitOptions
+    ): Promise<{
+      writeResults: { updateTime?: string; transformResults?: object[] }[];
+      commitTime: string;
+    }>;
     create(options: CreateDocumentOptions): Promise<DocumentData>;
     delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
     get(options: DocumentOptions): Promise<DocumentData | DocumentData[]>;
@@ -135,14 +142,68 @@ export interface UpdateDocumentOptions extends CreateDocumentOptions {
   updateOptions:
     | {
         updateAll: true;
-        fieldsToUpdate?: undefined;
+        fieldsToUpdate?: never;
         currentDocument?: currentDocument;
       }
     | {
         fieldsToUpdate: string[];
-        updateAll?: undefined;
+        updateAll?: never;
         currentDocument?: currentDocument;
       };
+}
+
+interface DeleteOperation {
+  delete: string;
+  update?: never;
+  transform?: never;
+}
+
+interface UpdateOperation {
+  update: {
+    documentPath: string;
+    fields: {
+      [key: string]: object;
+    };
+    [key: string]: any;
+  };
+  delete?: never;
+  transform?: never;
+}
+
+interface FieldTransformTypes {
+  setToServerValue: string;
+  increment: object;
+  maximum: object;
+  minimum: object;
+  appendMissingElements: object;
+  removeAllFromArray: object;
+}
+
+interface TransformOperation {
+  transform: {
+    documentPath: string;
+    fieldTransforms: { fieldPath: string; transformType: transformType }[];
+    [key: string]: any;
+  };
+  update?: never;
+  delete?: never;
+}
+
+export interface TransactionCommitOptions {
+  transaction: string;
+  writes: {
+    operation: DeleteOperation | UpdateOperation | TransformOperation;
+    currentDocument?: currentDocument;
+    updateOptions?:
+      | {
+          updateAll: true;
+          fieldsToUpdate?: never;
+        }
+      | {
+          fieldsToUpdate: string[];
+          updateAll?: never;
+        };
+  }[];
 }
 
 interface Transaction {
@@ -166,8 +227,8 @@ interface ReadTime {
 type ConsistencySelector = Transaction | NewTransaction | ReadTime;
 
 type currentDocument =
-  | { exists: boolean; updateTime?: undefined }
-  | { exists?: undefined; updateTime: string };
+  | { exists: boolean; updateTime?: never }
+  | { exists?: never; updateTime: string };
 
 export type TransactionOptions =
   | {
@@ -178,3 +239,11 @@ export type TransactionOptions =
       readWrite: { retryTransaction?: string };
       readOnly?: never;
     };
+
+type transformType =
+  | PickField<FieldTransformTypes, 'setToServerValue'>
+  | PickField<FieldTransformTypes, 'increment'>
+  | PickField<FieldTransformTypes, 'maximum'>
+  | PickField<FieldTransformTypes, 'minimum'>
+  | PickField<FieldTransformTypes, 'appendMissingElements'>
+  | PickField<FieldTransformTypes, 'removeAllFromArray'>;

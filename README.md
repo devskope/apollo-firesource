@@ -148,6 +148,84 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
       <br />
 
+    - `commit(options) => CommitResponse`
+
+      Commits a transaction while optionally updating documents.
+
+      - **options** (_object_)
+
+        ```javascript
+        {
+          transaction: string, // (required) A base64-encoded transaction id string.
+
+          // writes is an array of objects
+          writes: [
+            {
+              // (required)  The operation to execute
+              operation: {
+                // Union field operation can be only one of the following:
+                delete: string,   // Path to document to delete   (document path relative to database,  ex. '/users/joe')
+                transform: {
+                  documentPath: string,  // (required) Path to document with fields to transform
+                  fieldTransforms: Array<fieldTransform> // (required) Array of field transforms to apply;
+                }
+                update: {
+                  documentPath: string,  // (required) Path to document to update
+                  fields: {
+                    fieldName: {
+                      // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
+                      valueType: value
+                    }
+                  },
+                };
+              }
+
+              // (optional)
+              currentDocument: {
+                // Union field currentDocument can be only one of the following:
+                exists: boolean,   // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+                updateTime: string // (optional) Timestamp format When set, the target document must exist and have been last updated at that time
+              }
+
+              // (optional) Can be set only when the operation is update. if not set, existing document is overitten
+              updateOptions: {
+                // Union field updateOptions can be only one of the following:
+                updateAll: boolean,  // (optional) update all fields
+                fieldsToUpdate: string[], // array of fields to update
+              }
+            }
+          ]
+        }
+        ```
+
+      - **fieldTransform** (_object_)
+
+        ```javascript
+        {
+          fieldPath: string; // (required) Path of field to transform
+          transformType: {
+            // Union field transformType can be only one of the following:
+            setToServerValue: 'SERVER_VALUE_UNSPECIFIED' | 'REQUEST_TIME'; // Sets the field to the given server value.
+            increment: object; // Adds the given value to the field's current value.
+            maximum: object; // Sets the field to the maximum of its current value and the given value.
+            minimum: object; // Sets the field to the minimum of its current value and the given value.
+            appendMissingElements: object; // Append the given elements in order if they are not already present in the current field value
+            removeAllFromArray: object; //  Remove all of the given elements from the array in the field.
+          }
+        }
+        ```
+
+      - **returns** (_object_): CommitResponse
+
+        ```javascript
+        {
+          writeResults: Array; // https://cloud.google.com/firestore/docs/reference/rest/v1/WriteResult
+          commitTime: string;
+        }
+        ```
+
+      <br />
+
     - `delete(options) => object`
 
       Delete document from collection.
