@@ -1,7 +1,8 @@
 import { RESTDataSource, RequestOptions } from 'apollo-datasource-rest';
+import { AuthenticationError } from 'apollo-server-errors';
 
 import documents from './modules/documents';
-import { gtoken } from './utils';
+import gtoken from './utils/gtoken';
 import { FireSourceConfig } from './types/firesource';
 import { IDocument } from './types/documents/index';
 
@@ -28,8 +29,19 @@ class FireSource extends RESTDataSource {
   }
 
   async willSendRequest(request: RequestOptions) {
-    const token = await gtoken.getToken();
-    request.headers.set('Authorization', `Bearer ${token.access_token}`);
+    try {
+      const token = await gtoken.getToken();
+      request.headers.set('Authorization', `Bearer ${token.access_token}`);
+    } catch (error) {
+      if (error.message?.includes('getaddrinfo EAI_AGAIN www.googleapis.com')) {
+        throw new AuthenticationError(
+          'token request failed, reason: getaddrinfo EAI_AGAIN www.googleapis.com'
+        );
+      }
+      throw new AuthenticationError(
+        'ensure FIRESOURCE_CREDENTIALS and contents exist and are valid'
+      );
+    }
   }
 }
 
