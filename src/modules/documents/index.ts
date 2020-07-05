@@ -1,6 +1,5 @@
 // @ts-ignore
 import firestoreDocumentParser from 'firestore-parser';
-import { UserInputError } from 'apollo-server-errors';
 
 import FireSource from 'firesource';
 import {
@@ -24,10 +23,9 @@ import {
   buildQueryString,
   buildRecursiveQueryString,
 } from '../../utils/buildQueryString';
-import { isvalidSubPath } from '../../utils/';
-let documents: IDocument;
+import { inputError, validateSubPath } from '../../utils/validators';
 
-documents = function (this: FireSource) {
+const documents: IDocument = function (this: FireSource) {
   return {
     batchGet: async (options: BatchGetDocumentOptions) => {
       const { documents, fieldsToReturn, consistencySelector } = options;
@@ -35,11 +33,12 @@ documents = function (this: FireSource) {
 
       const payload = {
         documents: documents.map((documentPath, idx) => {
-          if (!isvalidSubPath(documentPath)) {
-            throw new UserInputError(
-              `documentPath at index ${idx} must start with and not end with '/'`
-            );
-          }
+          validateSubPath({
+            path: documentPath,
+            collection: 'documents',
+            name: 'documentPath',
+            idx,
+          });
 
           return this.documentBasePath + documentPath;
         }),
@@ -48,7 +47,6 @@ documents = function (this: FireSource) {
       };
 
       const response = await this.post(path, payload);
-
       const batchGetResult: BatchGetResult = response.reduce(
         (result: BatchGetResult, item: BatchGetResponseItem) => {
           if (item?.found) {
@@ -88,9 +86,8 @@ documents = function (this: FireSource) {
       const path = `${this.database}/documents:beginTransaction`;
 
       if (readOnly && readWrite) {
-        throw new UserInputError(
-          `transaction options can only be one of: readOnly | readWrite`
-        );
+        const errorMessage = `transaction options can only be one of: readOnly | readWrite`;
+        inputError(errorMessage);
       }
 
       return this.post(path, { options });
@@ -101,13 +98,12 @@ documents = function (this: FireSource) {
       const path = `${this.database}/documents:commit`;
 
       if (typeof transaction !== 'string') {
-        throw new UserInputError('transaction string must be proided');
+        inputError('transaction string must be proided');
       }
 
       if (!options.writes || !(options.writes instanceof Array)) {
-        throw new UserInputError(
-          'At least one write operation must be provided in the writes array'
-        );
+        const errorMessage = `At least one write operation must be provided in the writes array`;
+        inputError(errorMessage);
       }
 
       const writes = options.writes.map((write) => {
@@ -115,20 +111,15 @@ documents = function (this: FireSource) {
         const updateMask: { fieldPaths?: string[] } = {};
 
         if (!operation || (operation && Object.keys(operation).length !== 1)) {
-          throw new UserInputError('only one operation mode must be specified');
+          inputError('only one operation mode must be specified');
         }
 
         if (operation.transform) {
           const { documentPath, fieldTransforms } = operation.transform;
-
-          if (!isvalidSubPath(documentPath)) {
-            throw new UserInputError(
-              `documentPath must start with and not end with '/'`
-            );
-          }
-
+          validateSubPath({ path: documentPath, name: 'documentPath' });
           operation.transform.document = this.documentBasePath + documentPath;
           delete operation.transform.documentPath;
+
           operation.transform.fieldTransforms = fieldTransforms.map((t) => {
             const transform = { ...t, ...t.transformType };
             delete transform.transformType;
@@ -138,13 +129,7 @@ documents = function (this: FireSource) {
 
         if (operation.update) {
           const { documentPath } = operation.update;
-
-          if (!isvalidSubPath(documentPath)) {
-            throw new UserInputError(
-              `documentPath must start with and not end with '/'`
-            );
-          }
-
+          validateSubPath({ path: documentPath, name: 'documentPath' });
           operation.update.name = this.documentBasePath + documentPath;
           delete operation.update.documentPath;
         }
@@ -153,22 +138,18 @@ documents = function (this: FireSource) {
           const { fieldsToUpdate, updateAll } = updateOptions;
 
           if (!operation.update) {
-            throw new UserInputError(
-              'updateOptions can only be provided with an update operation'
-            );
+            const errorMessage = `updateOptions can only be provided with an update operation`;
+            inputError(errorMessage);
           }
 
           if (fieldsToUpdate && updateAll) {
-            throw new UserInputError(
-              'updateOptions must have only one property'
-            );
+            inputError('updateOptions must have only one property');
           }
 
           if (fieldsToUpdate) {
             if (!(fieldsToUpdate instanceof Array) || !fieldsToUpdate.length) {
-              throw new UserInputError(
-                'fieldsToUpdate must be a non empty array of field names'
-              );
+              const errorMessage = `fieldsToUpdate must be a non empty array of field names`;
+              inputError(errorMessage);
             }
 
             updateMask.fieldPaths = fieldsToUpdate;
@@ -185,9 +166,8 @@ documents = function (this: FireSource) {
             (currentDocument.exists && currentDocument.updateTime) ||
             !(currentDocument.exists || currentDocument.updateTime))
         ) {
-          throw new UserInputError(
-            'only "exists" or "updateTime" must be specified on currentDocument'
-          );
+          const errorMessage = `only "exists" or "updateTime" must be specified on currentDocument`;
+          inputError(errorMessage);
         }
 
         return {
@@ -204,13 +184,7 @@ documents = function (this: FireSource) {
 
     create: async (options: CreateDocumentOptions) => {
       const { collectionPath, docId, data, fieldsToReturn } = options;
-
-      if (!isvalidSubPath(collectionPath)) {
-        throw new UserInputError(
-          `collectionPath must start with and not end with '/'`
-        );
-      }
-
+      validateSubPath({ path: collectionPath, name: 'collectionPath' });
       let path = `${this.database}/documents` + collectionPath;
 
       if (docId) path += '?documentId=' + docId;
@@ -224,19 +198,12 @@ documents = function (this: FireSource) {
       }
 
       const doc = await this.post(path, data);
-
       return firestoreDocumentParser(doc);
     },
 
     delete: async (options: DeleteDocumentOptions) => {
       const { currentDocument, documentPath } = options;
-
-      if (!isvalidSubPath(documentPath)) {
-        throw new UserInputError(
-          `documentPath must start with and not end with '/'`
-        );
-      }
-
+      validateSubPath({ path: documentPath, name: 'documentPath' });
       let path = `${this.database}/documents` + documentPath;
 
       if (currentDocument) {
@@ -251,7 +218,6 @@ documents = function (this: FireSource) {
 
       const response = await this.delete(path);
       response.deleted = true;
-
       return response;
     },
 
@@ -259,24 +225,12 @@ documents = function (this: FireSource) {
       const { collectionPath, documentPath, fieldsToReturn } = options;
 
       if (collectionPath && documentPath) {
-        throw new UserInputError(
-          `only one of collectionPath or documentPath must be specified`
-        );
-      }
-
-      if (collectionPath && !isvalidSubPath(collectionPath)) {
-        throw new UserInputError(
-          `collectionPath must start with and not end with '/'`
-        );
-      }
-
-      if (documentPath && !isvalidSubPath(documentPath)) {
-        throw new UserInputError(
-          `documentPath must start with and not end with '/'`
-        );
+        const errorMessage = `only one of collectionPath or documentPath must be specified`;
+        inputError(errorMessage);
       }
 
       if (collectionPath) {
+        validateSubPath({ path: collectionPath, name: 'collectionPath' });
         let path = `${this.database}/documents` + collectionPath;
 
         if (fieldsToReturn) {
@@ -288,11 +242,11 @@ documents = function (this: FireSource) {
         }
 
         const docs = await this.get(path);
-
         return docs.documents
           ? docs.documents.map(firestoreDocumentParser)
           : [];
       } else {
+        validateSubPath({ path: documentPath, name: 'documentPath' });
         let path = `${this.database}/documents` + documentPath;
 
         if (fieldsToReturn) {
@@ -304,7 +258,6 @@ documents = function (this: FireSource) {
         }
 
         const doc = await this.get(path);
-
         return firestoreDocumentParser(doc);
       }
     },
@@ -319,26 +272,18 @@ documents = function (this: FireSource) {
         consistencySelector,
       } = options.queryOptions;
       let path = `${this.database}/documents`;
-
-      if (!isvalidSubPath(collectionPath)) {
-        throw new UserInputError(
-          `collectionPath must start with and not end with '/'`
-        );
-      }
+      validateSubPath({ path: collectionPath, name: 'collectionPath' });
+      path += collectionPath;
 
       if (orderBy && showMissing) {
-        throw new UserInputError(
-          `only one of 'orderBy' or 'showMissing' can be present on queryOptions`
-        );
+        const errorMessage = `only one of 'orderBy' or 'showMissing' can be present on queryOptions`;
+        inputError(errorMessage);
       }
 
       if (consistencySelector?.transaction && consistencySelector?.readTime) {
-        throw new UserInputError(
-          `only one of 'readTime' or 'transaction' can be present on queryOptions`
-        );
+        const errorMessage = `only one of 'readTime' or 'transaction' can be present on queryOptions`;
+        inputError(errorMessage);
       }
-
-      path += collectionPath;
 
       if (pageToken) path = buildQueryString(path, 'pageToken', pageToken);
       if (pageSize) path = buildQueryString(path, 'pageSize', String(pageSize));
@@ -383,15 +328,8 @@ documents = function (this: FireSource) {
 
     listCollectionIds: async (options: ListCollectionIdOptions) => {
       const { documentPath, pageSize, pageToken } = options;
-
       let path = `${this.database}/documents`;
-
-      if (!isvalidSubPath(documentPath)) {
-        throw new UserInputError(
-          `documentPath must start with and not end with '/'`
-        );
-      }
-
+      validateSubPath({ path: documentPath, name: 'documentPath' });
       path += documentPath + ':listCollectionIds';
 
       const response = await this.post(path, { pageSize, pageToken });
@@ -405,10 +343,8 @@ documents = function (this: FireSource) {
 
     rollBack: async (transaction: string) => {
       const path = `${this.database}/documents:rollback`;
-
       const response = await this.post(path, { transaction });
       response.rolledBack = true;
-
       return response;
     },
 
@@ -417,11 +353,7 @@ documents = function (this: FireSource) {
       let path = `${this.database}/documents`;
 
       if (documentPath) {
-        if (!isvalidSubPath(documentPath)) {
-          throw new UserInputError(
-            `documentPath must start with and not end with '/'`
-          );
-        }
+        validateSubPath({ path: documentPath, name: 'documentPath' });
         path += documentPath;
       }
 
@@ -467,12 +399,7 @@ documents = function (this: FireSource) {
     update: async (options: UpdateDocumentOptions) => {
       const { documentPath, data, fieldsToReturn, updateOptions } = options;
 
-      if (!isvalidSubPath(documentPath)) {
-        throw new UserInputError(
-          `documentPath must start with and not end with '/'`
-        );
-      }
-
+      validateSubPath({ path: documentPath, name: 'documentPath' });
       let path = `${this.database}/documents` + documentPath;
 
       if (updateOptions.currentDocument) {
