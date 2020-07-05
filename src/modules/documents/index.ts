@@ -23,9 +23,8 @@ import {
 import {
   buildQueryString,
   buildRecursiveQueryString,
-  isvalidSubPath,
-} from '../../utils';
-
+} from '../../utils/buildQueryString';
+import { isvalidSubPath } from '../../utils/';
 let documents: IDocument;
 
 documents = function (this: FireSource) {
