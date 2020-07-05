@@ -14,7 +14,7 @@ export interface IDocument {
     }>;
     create(options: CreateDocumentOptions): Promise<DocumentData>;
     delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
-    get(options: DocumentOptions): Promise<DocumentData & DocumentData[]>;
+    get(options: GetDocumentOptions): Promise<DocumentData & DocumentData[]>;
     list(options: ListDocumentOptions): Promise<ListResult>;
     listCollectionIds(
       options: ListCollectionIdOptions
@@ -30,28 +30,18 @@ export interface IDocument {
 }
 
 export interface BatchGetDocumentOptions {
-  documents: { collectionId: string; docId: string }[];
+  documents: string[];
   fieldsToReturn?: string[];
   consistencySelector?: consistencySelector;
 }
 
-export interface DocumentOptions {
-  collectionId: string;
+export interface CreateDocumentOptions extends CreateUpdateOptions {
+  collectionPath: string;
   docId?: string;
-  fieldsToReturn?: string[];
 }
 
-export interface CreateDocumentOptions extends DocumentOptions {
-  data: {
-    name?: string;
-    fields: {
-      [key: string]: object;
-    };
-  };
-}
-
-export interface DeleteDocumentOptions extends DocumentOptions {
-  docId: string;
+export interface DeleteDocumentOptions {
+  documentPath: string;
   currentDocument?: currentDocument;
 }
 
@@ -78,13 +68,12 @@ export interface QueryDocumentOptions {
     offset?: number;
     limit?: number;
   };
-  collectionId?: string;
-  docId?: string;
+  documentPath?: string;
   consistencySelector?: consistencySelector;
 }
 
-export interface UpdateDocumentOptions extends CreateDocumentOptions {
-  docId: string;
+export interface UpdateDocumentOptions extends CreateUpdateOptions {
+  documentPath: string;
   updateOptions?:
     | (PickField<UpdateOptions, 'fieldsToUpdate'> & {
         currentDocument?: currentDocument;
@@ -146,6 +135,10 @@ export interface QueryResult {
   transaction: string;
 }
 
+export type GetDocumentOptions =
+  | GetDocumentsByPath
+  | GetDocumentsFromCollection;
+
 export type TransactionOptions =
   | PickField<TransactionMode, 'readOnly'>
   | PickField<TransactionMode, 'readWrite'>;
@@ -154,6 +147,16 @@ interface Consistency {
   transaction: string;
   newTransaction: TransactionOptions;
   readTime: string;
+}
+
+interface CreateUpdateOptions {
+  fieldsToReturn?: [];
+  data: {
+    documentPath?: string;
+    fields: {
+      [key: string]: object;
+    };
+  };
 }
 
 interface DocumentData {
@@ -171,6 +174,18 @@ interface FieldTransformTypes {
   minimum: object;
   appendMissingElements: object;
   removeAllFromArray: object;
+}
+
+interface GetDocumentsFromCollection {
+  collectionPath: string;
+  documentPath?: never;
+  fieldsToReturn?: [];
+}
+
+interface GetDocumentsByPath {
+  documentPath: string;
+  collectionPath?: never;
+  fieldsToReturn?: [];
 }
 
 interface ListQueryBaseOptions {

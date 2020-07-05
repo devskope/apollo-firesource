@@ -5,20 +5,20 @@ import { UserInputError } from 'apollo-server-errors';
 import FireSource from 'firesource';
 import {
   IDocument,
-  DocumentOptions,
   BatchGetDocumentOptions,
   CreateDocumentOptions,
   DeleteDocumentOptions,
+  GetDocumentOptions,
   ListCollectionIdOptions,
   ListDocumentOptions,
   QueryDocumentOptions,
   UpdateDocumentOptions,
+  TransactionOptions,
   TransactionCommitOptions,
   BatchGetResult,
   BatchGetResponseItem,
   QueryResponseItem,
   QueryResult,
-  TransactionOptions,
 } from '../../types/documents';
 import {
   buildQueryString,
@@ -33,9 +33,16 @@ documents = function (this: FireSource) {
     batchGet: async (options: BatchGetDocumentOptions) => {
       const { documents, fieldsToReturn, consistencySelector } = options;
       const path = `${this.database}/documents:batchGet`;
+
       const payload = {
-        documents: documents.map((doc) => {
-          return `${this.documentBasePath}/${doc.collectionId}/${doc.docId}`;
+        documents: documents.map((documentPath, idx) => {
+          if (!isvalidSubPath(documentPath)) {
+            throw new UserInputError(
+              `documentPath at index ${idx} must start with and not end with '/'`
+            );
+          }
+
+          return this.documentBasePath + documentPath;
         }),
         ...(fieldsToReturn && { mask: { fieldPaths: fieldsToReturn } }),
         ...consistencySelector,
@@ -197,10 +204,17 @@ documents = function (this: FireSource) {
     },
 
     create: async (options: CreateDocumentOptions) => {
-      const { collectionId, docId, data, fieldsToReturn } = options;
-      let path = `${this.database}/documents/${collectionId}`;
+      const { collectionPath, docId, data, fieldsToReturn } = options;
 
-      if (docId) path += `?documentId=${docId}`;
+      if (!isvalidSubPath(collectionPath)) {
+        throw new UserInputError(
+          `collectionPath must start with and not end with '/'`
+        );
+      }
+
+      let path = `${this.database}/documents` + collectionPath;
+
+      if (docId) path += '?documentId=' + docId;
 
       if (fieldsToReturn) {
         path = buildRecursiveQueryString(
@@ -216,8 +230,15 @@ documents = function (this: FireSource) {
     },
 
     delete: async (options: DeleteDocumentOptions) => {
-      const { collectionId, docId, currentDocument } = options;
-      let path = `${this.database}/documents/${collectionId}/${docId}`;
+      const { currentDocument, documentPath } = options;
+
+      if (!isvalidSubPath(documentPath)) {
+        throw new UserInputError(
+          `documentPath must start with and not end with '/'`
+        );
+      }
+
+      let path = `${this.database}/documents` + documentPath;
 
       if (currentDocument) {
         const { exists, updateTime } = currentDocument;
@@ -235,13 +256,29 @@ documents = function (this: FireSource) {
       return response;
     },
 
-    get: async (options: DocumentOptions) => {
-      const { collectionId, docId, fieldsToReturn } = options;
-      const collectionPath = `${this.database}/documents/${collectionId}`;
-      let path;
+    get: async (options: GetDocumentOptions) => {
+      const { collectionPath, documentPath, fieldsToReturn } = options;
 
-      if (!docId) {
-        path = collectionPath;
+      if (collectionPath && documentPath) {
+        throw new UserInputError(
+          `only one of collectionPath or documentPath must be specified`
+        );
+      }
+
+      if (collectionPath && !isvalidSubPath(collectionPath)) {
+        throw new UserInputError(
+          `collectionPath must start with and not end with '/'`
+        );
+      }
+
+      if (documentPath && !isvalidSubPath(documentPath)) {
+        throw new UserInputError(
+          `documentPath must start with and not end with '/'`
+        );
+      }
+
+      if (collectionPath) {
+        let path = `${this.database}/documents` + collectionPath;
 
         if (fieldsToReturn) {
           path = buildRecursiveQueryString(
@@ -257,7 +294,7 @@ documents = function (this: FireSource) {
           ? docs.documents.map(firestoreDocumentParser)
           : [];
       } else {
-        path = `${collectionPath}/${docId}`;
+        let path = `${this.database}/documents` + documentPath;
 
         if (fieldsToReturn) {
           path = buildRecursiveQueryString(
@@ -377,15 +414,17 @@ documents = function (this: FireSource) {
     },
 
     runQuery: async (options: QueryDocumentOptions) => {
-      const {
-        collectionId,
-        docId,
-        structuredQuery,
-        consistencySelector,
-      } = options;
+      const { documentPath, structuredQuery, consistencySelector } = options;
       let path = `${this.database}/documents`;
 
-      if (collectionId && docId) path += `/${collectionId}/${docId}`;
+      if (documentPath) {
+        if (!isvalidSubPath(documentPath)) {
+          throw new UserInputError(
+            `documentPath must start with and not end with '/'`
+          );
+        }
+        path += documentPath;
+      }
 
       const response = await this.post(`${path}:runQuery`, {
         structuredQuery,
@@ -427,14 +466,15 @@ documents = function (this: FireSource) {
     },
 
     update: async (options: UpdateDocumentOptions) => {
-      const {
-        collectionId,
-        docId,
-        data,
-        fieldsToReturn,
-        updateOptions,
-      } = options;
-      let path = `${this.database}/documents/${collectionId}/${docId}`;
+      const { documentPath, data, fieldsToReturn, updateOptions } = options;
+
+      if (!isvalidSubPath(documentPath)) {
+        throw new UserInputError(
+          `documentPath must start with and not end with '/'`
+        );
+      }
+
+      let path = `${this.database}/documents` + documentPath;
 
       if (updateOptions.currentDocument) {
         const { exists, updateTime } = updateOptions.currentDocument;
