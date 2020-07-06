@@ -6,7 +6,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
 - Set required environment variables:
 
-  - `FIRE_SOURCE_CREDS=<Path-to-service-account-json>` // must have firestore access
+  - `FIRESOURCE_CREDENTIALS=<Path-to-service-account-json>` // must have firestore access
 
 - Pass `FireSource` instance as option to `ApolloServer` constructor:
   ```javascript
@@ -28,14 +28,22 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
   ```javascript
   Query: {
     document: async (parent, args, ctx) => {
-      const { collectionId, docId } = args;
+      const { documentPath } = args;
       const { dataSources: { firestore } } = ctx;
 
       try {
         // get document by id from collection
-        return firestore.documents().get({ collectionId, docId });
+        return firestore.documents().get({ documentPath });
       } catch (error) {
-        // handle error
+        /* handle error
+         *
+         * Ideally first handle Firestore error responses:
+         *   error.extensions?.response - exception details
+         *
+         * Then FireSource Errors:
+         *   error.extensions.code === <'BAD_USER_INPUT'|'UNAUTHENTICATED'>
+         *   error.message - exception details
+         */
       }
     },
   },
@@ -57,6 +65,11 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
   ### Documents - `firestore.documents()`
 
+  - **presets**
+
+    - `documentBasePath = projects/<Firestore-project-id>/databases/<database>/documents`
+      Paths relative to `documentBasePath` (`collectionPath/documentPath`) must start with and not end with `'/'` &nbsp; ex: `'/users/bob'`
+
   - **methods** (_async_):
 
     - `batchGet(options) => batchGetResult`
@@ -67,12 +80,12 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
         ```javascript
         {
-          documents: { collectionId: string; docId: string }[], // (required) Array of { collectionId, docId } objects to build document paths from
+          documents: string[], // (required) Array of document paths relative to documentBasePath ('.../databases/<db>/documents')  ex '/users/mike1'
           fieldsToReturn: string[], // (optional) array of document fields to include in response
 
           // (optional)
           consistencySelector: {
-            // can be only one of the following:
+            // Union field consistencySelector can be only one of the following:
             transaction: string,  // Reads documents in a transaction: A base64-encoded string.
             newTransaction: TransactionOptions, // https://cloud.google.com/firestore/docs/reference/rest/v1/TransactionOptions
             readTime: string
@@ -121,7 +134,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
       <br />
 
-    - `create(options) => DocumentData`
+    - `create(options) => Document`
 
       Insert new document into a collection.
 
@@ -129,11 +142,11 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
         ```javascript
         {
-          collectionId: string, // (required)
-          docId: string // (optional) custom document id
+          collectionPath: string, // (required) path to parent collection relative to documentBasePath
+          docId: string   // (optional) custom document id
           fieldsToReturn: string[] // (optional) array of fields to include in response (mask)
           data: {
-            name: string // (optional) document resource name
+            name: string  // (optional) document resource name
             fields: {
               "fieldName": {
                 // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
@@ -144,7 +157,16 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
         }
         ```
 
-      - **returns** (_object_): The newly created document
+      - **returns** (_object_): Document
+
+        ```javascript
+        {
+          name: string
+          fields: object,
+          createTime: string,
+          updateTime: string,
+        }
+        ```
 
       <br />
 
@@ -164,13 +186,13 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
               // (required)  The operation to execute
               operation: {
                 // Union field operation can be only one of the following:
-                delete: string,   // Path to document to delete   (document path relative to database,  ex. '/users/joe')
+                delete: string,   // Path to document to delete relative to documentBasePath,  ex. '/users/joe'
                 transform: {
-                  documentPath: string,  // (required) Path to document with fields to transform
+                  documentPath: string,  // (required) Path to document relative to documentBasePath
                   fieldTransforms: Array<fieldTransform> // (required) Array of field transforms to apply;
                 }
                 update: {
-                  documentPath: string,  // (required) Path to document to update
+                  documentPath: string,  // (required) Path to document to update relative to documentBasePath
                   fields: {
                     fieldName: {
                       // where 'valueType' is one of https://cloud.google.com/firestore/docs/reference/rest/v1/Value
@@ -234,12 +256,11 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
         ```javascript
         {
-          collectionId: string, // (required)
-          docId: string, // (required)
+          documentPath: string, // (required) path to document relative to documentBasePath
 
           // (optional)
           currentDocument: {
-            exists: boolean, // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
+            exists: boolean,  // (optional) When set to true, the target document must exist. When set to false, the target document must not exist
             updateTime: string // (optional) Timestamp format: When set, the target document must exist and have been last updated at that time
           }
         }
@@ -261,12 +282,28 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
       - **options** (_object_)
         ```javascript
         {
-          collectionId, // string (required)
-          docId, // string (optional) ID of single doc to retrieve
-          fieldsToReturn, // string[] (optional) Array of fields to include in response (mask)
+          collectionPath: string,  // (optional) relative path to collection: if set and !documentPath ,get all documents in collection
+          documentPath: string,    // (optional) relative path to document: if set and !collectionPath, get single document
+          fieldsToReturn: string[]   // (optional) Array of fields to include in response (mask)
         }
         ```
-      - **returns** (_object | Array_): Documents matching provided options or an empty array if none.
+      - **returns** (_object_): Document | Documents
+
+        ```javascript
+        // Document
+        {
+          name: string
+          fields: object,
+          createTime: string,
+          updateTime: string,
+        }
+
+        // Documents
+        {
+          documents: Document[];
+          documentCount: number;
+        }
+        ```
 
       <br />
 
@@ -278,7 +315,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
         ```javascript
         {
-          collectionPath: string;    // (required) Full collection path relative to database ex: '/users'
+          collectionPath: string;    // (required) Full collection path relative to documentPath ex: '/users'
           fieldsToReturn: string[];  // (optional) array of fields to include in response (mask)
 
           // (optional)
@@ -364,11 +401,8 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
         ```javascript
         {
-          collectionId: string, // (optional)
-          docId: string, // (optional)
-
-          // (required) https://cloud.google.com/firestore/docs/reference/rest/v1/StructuredQuery
-          structuredQuery: object,
+          structuredQuery: object, // (required) https://cloud.google.com/firestore/docs/reference/rest/v1/StructuredQuery
+          documentPath: string,  // (optional)  path relative to documentBasePath
 
           // (optional)
           consistencySelector: {
@@ -393,7 +427,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
       <br />
 
-    - `update(options) => DocumentData`
+    - `update(options) => Document`
 
       Update document in collection by id.
 
@@ -401,8 +435,7 @@ Apollo server datasource wrapping Firestore REST APIs. &nbsp;&nbsp; [PRs welcome
 
         ```javascript
         {
-          collectionId: string, // (required)
-          docId: string, // (required)  document id
+          documentPath: string,  // (required)  document path relative to documentBasePath
           fieldsToReturn: string[], // (optional) array of fields to include in response (mask)
           data: {
             name: string, // (optional) document resource name
