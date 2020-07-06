@@ -4,5 +4,10 @@
   "content": "README.md",
   "pages": {},
   "related": [],
-  "tabs": []
+  "tabs": [
+    {
+      "title": "NPM",
+      "href": "https://npmjs.com/package/@devskope/apollo-firesource"
+    }
+  ]
 }
