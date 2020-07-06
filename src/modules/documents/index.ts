@@ -243,8 +243,11 @@ const documents: IDocument = function (this: FireSource) {
 
         const docs = await this.get(path);
         return docs.documents
-          ? docs.documents.map(firestoreDocumentParser)
-          : [];
+          ? {
+              documents: docs.documents.map(firestoreDocumentParser),
+              documentCount: docs.documents.length,
+            }
+          : { documentCount: 0 };
       } else {
         validateSubPath({ path: documentPath, name: 'documentPath' });
         let path = `${this.database}/documents` + documentPath;

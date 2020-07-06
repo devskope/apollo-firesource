@@ -12,9 +12,9 @@ export interface IDocument {
       writeResults: { updateTime?: string; transformResults?: object[] }[];
       commitTime: string;
     }>;
-    create(options: CreateDocumentOptions): Promise<DocumentData>;
+    create(options: CreateDocumentOptions): Promise<Document>;
     delete(options: DeleteDocumentOptions): Promise<{ deleted: true }>;
-    get(options: GetDocumentOptions): Promise<DocumentData & DocumentData[]>;
+    get(options: GetDocumentOptions): Promise<Document | Documents>;
     list(options: ListDocumentOptions): Promise<ListResult>;
     listCollectionIds(
       options: ListCollectionIdOptions
@@ -25,7 +25,7 @@ export interface IDocument {
     }>;
     rollBack(transaction: string): Promise<{ rolledBack: true }>;
     runQuery(options: QueryDocumentOptions): Promise<QueryResult>;
-    update(options: UpdateDocumentOptions): Promise<DocumentData>;
+    update(options: UpdateDocumentOptions): Promise<Document>;
   };
 }
 
@@ -159,12 +159,15 @@ interface CreateUpdateOptions {
   };
 }
 
-interface DocumentData {
+interface Documents {
+  documents: Document[];
+  documentCount: number;
+}
+interface Document {
   name: string;
   fields: object;
   createTime: string;
   updateTime: string;
-  [k: string]: any;
 }
 
 interface FieldTransformTypes {
