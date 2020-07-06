@@ -36,6 +36,7 @@ jobs:
           npx npe version ${{ steps.release.outputs.version }}
           git add package.json
           git commit -m "bump version to ${{ steps.release.outputs.version }}"
+          git push origin master
 
       - name: build and publish
         if: steps.release.outputs.version
