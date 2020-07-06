@@ -1,0 +1,13 @@
+{
+  "name": "Apollo-FireSource",
+  "platforms": ["Web"],
+  "content": "README.md",
+  "pages": {},
+  "related": [],
+  "tabs": [
+    {
+      "title": "NPM",
+      "href": "https://npmjs.com/package/@devskope/apollo-firesource"
+    }
+  ]
+}

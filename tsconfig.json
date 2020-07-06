@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "skipLibCheck": true,
+    "target": "ES2019"
+  },
+  "exclude": ["node_modules", "**/*.spec.ts"],
+  "include": ["src/**/*"]
+}

@@ -1,0 +1,47 @@
+# This workflow will release, build and publish a package to npm when a release is created
+
+name: release-publish
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release-on-push:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - id: release
+        uses: rymndhng/release-on-push-action@master
+        with:
+          bump_version_scheme: norelease
+
+      - name: checkout
+        if: steps.release.outputs.version
+        uses: actions/checkout@v2
+
+      - name: configure git
+        if: steps.release.outputs.version
+        run: |
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "$GITHUB_ACTOR"
+
+      - name: bump package version
+        if: steps.release.outputs.version
+        run: |
+          git switch master
+          npx npe version ${{ steps.release.outputs.version }}
+          git add package.json
+          git commit -m "bump version to ${{ steps.release.outputs.version }}"
+
+      - name: build and publish
+        if: steps.release.outputs.version
+        run: |
+          npm ci
+          npm run build
+          npm publish --access=public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
